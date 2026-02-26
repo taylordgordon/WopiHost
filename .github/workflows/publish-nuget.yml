@@ -1,0 +1,49 @@
+name: Publish NuGet Packages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (e.g., 1.0.0)'
+        required: false
+        default: '1.0.0'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Pack WopiHost.Abstractions
+      run: dotnet pack ./src/WopiHost.Abstractions/WopiHost.Abstractions.csproj -c Release --no-build -p:RepositoryUrl=https://github.com/taylordgordon/WopiHost.git -p:Version=${{ github.event.inputs.version || '1.0.0' }}
+    
+    - name: Pack WopiHost.Core
+      run: dotnet pack ./src/WopiHost.Core/WopiHost.Core.csproj -c Release --no-build -p:RepositoryUrl=https://github.com/taylordgordon/WopiHost.git -p:Version=${{ github.event.inputs.version || '1.0.0' }}
+    
+    - name: Pack WopiHost.Discovery
+      run: dotnet pack ./src/WopiHost.Discovery/WopiHost.Discovery.csproj -c Release --no-build -p:RepositoryUrl=https://github.com/taylordgordon/WopiHost.git -p:Version=${{ github.event.inputs.version || '1.0.0' }}
+    
+    - name: Pack WopiHost.MemoryLockProvider
+      run: dotnet pack ./src/WopiHost.MemoryLockProvider/WopiHost.MemoryLockProvider.csproj -c Release --no-build -p:RepositoryUrl=https://github.com/taylordgordon/WopiHost.git -p:Version=${{ github.event.inputs.version || '1.0.0' }}
+    
+    - name: Pack WopiHost.Url
+      run: dotnet pack ./src/WopiHost.Url/WopiHost.Url.csproj -c Release --no-build -p:RepositoryUrl=https://github.com/taylordgordon/WopiHost.git -p:Version=${{ github.event.inputs.version || '1.0.0' }}
+    
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget add source --username taylordgordon --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/taylordgordon/index.json"
+        dotnet nuget push "**/*.nupkg" --source "github" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
