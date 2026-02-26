@@ -10,6 +10,11 @@ on:
         required: false
         default: '1.0.0'
 
+# Add this at the workflow level
+permissions:
+  contents: read
+  packages: write
+
 env:
   VERSION: ${{ github.event.inputs.version || '1.0.0' }}
   REPO_URL: https://github.com/taylordgordon/WopiHost.git
@@ -26,19 +31,14 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    # Create a Directory.Build.props that overrides PackageId for ALL projects at once
     - name: Create Pilotlight package overrides
       run: |
         cat > src/Directory.Build.targets << 'EOF'
         <Project>
           <PropertyGroup>
-            <!-- Prefix all PackageIds with Pilotlight. -->
             <PackageId>Pilotlight.$(AssemblyName)</PackageId>
-            <!-- Use our version -->
             <PackageVersion>${{ env.VERSION }}</PackageVersion>
-            <!-- Point to our repo -->
             <RepositoryUrl>${{ env.REPO_URL }}</RepositoryUrl>
-            <!-- Disable package validation (compares against old public packages) -->
             <EnablePackageValidation>false</EnablePackageValidation>
             <NoPackageAnalysis>true</NoPackageAnalysis>
             <NoWarn>$(NoWarn);NU5104</NoWarn>
